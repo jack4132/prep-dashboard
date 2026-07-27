@@ -47,8 +47,8 @@ npm run build
 
 ## Login Credentials
 
-- userId: `vedant-admin`
-- password: `vedant123`
+- userId: `******`
+- password: `******`
 
 ## Project Structure
 
