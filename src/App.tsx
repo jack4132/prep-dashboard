@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
-import { ProtectedRoute } from './components/ProtectedRoute'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { PreviewPage } from './pages/PreviewPage'
@@ -21,16 +20,17 @@ function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
 
-      <Route element={<ProtectedRoute />}>
+      {/* <Route element={<ProtectedRoute />}> */}
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/tracking" element={<DashboardPage />} />
           <Route path="/tests/new" element={<TestFormPage />} />
           <Route path="/tests/:testId/edit" element={<TestFormPage />} />
           <Route path="/tests/:testId/questions" element={<QuestionsPage />} />
           <Route path="/tests/:testId/preview" element={<PreviewPage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Route>
-      </Route>
+      {/* </Route> */}
 
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

@@ -3,13 +3,16 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   createQuestionsBulk,
   fetchQuestionsBulk,
-  getSubTopicsByTopics,
   getTestById,
-  getTopicsBySubject,
   updateTest,
-} from '../api/services'
+} from "../api/services";
 import type { EditableQuestion, QuestionInput, SubTopic, Test, Topic } from '../types'
 import { uniqueValues } from '../utils/format'
+import { questionSidebarDefaultState, useQuestionSidebar } from '../store/questionSidebarContext'
+import { TestCreationHeader, type TestCreationMode } from '../components/TestCreationHeader'
+import { QuestionEditorShell } from '../components/QuestionEditorShell'
+import { PublishFlowSection } from '../components/PublishFlowSection'
+import './QuestionsPage.css'
 
 const questionTemplate: Omit<EditableQuestion, 'localId'> = {
   type: 'mcq',
@@ -26,13 +29,97 @@ const questionTemplate: Omit<EditableQuestion, 'localId'> = {
   media_url: '',
 }
 
+const mockTest: Test = {
+  id: "demo",
+  name: "Demo Test",
+  subject: "1",
+  subject_id: "1",
+  topics: ["topic-1"],
+  sub_topics: ["sub-topic-1"],
+  difficulty: "medium",
+  correct_marks: 4,
+  wrong_marks: -1,
+  unattempt_marks: 0,
+  total_time: 60,
+  total_marks: 100,
+  total_questions: 2,
+};
+
+const mockSubjectsById: Record<string, string> = {
+  "1": "1",
+  "2": "2",
+  "subject-1": "1",
+  "subject-2": "2",
+};
+
+const mockTopicsBySubject: Record<string, Topic[]> = {
+  "1": [
+    { id: "topic-1", name: "Algebra", subject_id: "1" },
+    { id: "topic-2", name: "Geometry", subject_id: "1" },
+  ],
+  "2": [
+    { id: "topic-3", name: "Physics", subject_id: "2" },
+    { id: "topic-4", name: "Chemistry", subject_id: "2" },
+  ],
+  "subject-1": [
+    { id: "topic-1", name: "Algebra", subject_id: "subject-1" },
+    { id: "topic-2", name: "Geometry", subject_id: "subject-1" },
+  ],
+  "subject-2": [
+    { id: "topic-3", name: "Physics", subject_id: "subject-2" },
+    { id: "topic-4", name: "Chemistry", subject_id: "subject-2" },
+  ],
+};
+
+const mockSubTopicsByTopic: Record<string, SubTopic[]> = {
+  "topic-1": [
+    { id: "sub-topic-1", name: "Linear Equations", topic_id: "topic-1" },
+    { id: "sub-topic-2", name: "Quadratic Equations", topic_id: "topic-1" },
+  ],
+  "topic-2": [
+    { id: "sub-topic-3", name: "Triangles", topic_id: "topic-2" },
+    { id: "sub-topic-4", name: "Circles", topic_id: "topic-2" },
+  ],
+  "topic-3": [
+    { id: "sub-topic-5", name: "Motion", topic_id: "topic-3" },
+    { id: "sub-topic-6", name: "Force", topic_id: "topic-3" },
+  ],
+  "topic-4": [
+    { id: "sub-topic-7", name: "Atoms", topic_id: "topic-4" },
+    { id: "sub-topic-8", name: "Reactions", topic_id: "topic-4" },
+  ],
+};
+
+const mockTopics: Topic[] = [
+  { id: 'topic-1', name: 'Algebra', subject_id: 'subject-1' },
+  { id: 'topic-2', name: 'Geometry', subject_id: 'subject-1' },
+]
+
+const mockSubTopics: SubTopic[] = [
+  { id: 'sub-topic-1', name: 'Linear Equations', topic_id: 'topic-1' },
+  { id: 'sub-topic-2', name: 'Quadratic Equations', topic_id: 'topic-1' },
+]
+
 function makeLocalId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+function toLabel(value: string | undefined) {
+  if (!value) return 'N/A'
+  return value
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function toDifficulty(value: string | undefined) {
+  if (!value) return 'Medium'
+  return value.slice(0, 1).toUpperCase() + value.slice(1).toLowerCase()
 }
 
 export function QuestionsPage() {
   const navigate = useNavigate()
   const { testId } = useParams()
+  const { setState: setSidebarState } = useQuestionSidebar()
   const [test, setTest] = useState<Test | null>(null)
   const [questions, setQuestions] = useState<EditableQuestion[]>([])
   const [draft, setDraft] = useState<EditableQuestion>({
@@ -45,6 +132,14 @@ export function QuestionsPage() {
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [selectedMode, setSelectedMode] = useState<TestCreationMode>('chapterwise')
+  const [showPublishModal, setShowPublishModal] = useState(false)
+  const [publishMode, setPublishMode] = useState<'now' | 'schedule'>('now')
+  const [scheduleDate, setScheduleDate] = useState('')
+  const [scheduleTime, setScheduleTime] = useState('')
+  const [liveUntil, setLiveUntil] = useState<'always' | '1w' | '2w' | '3w' | '1m' | 'custom'>('custom')
+  const [endDate, setEndDate] = useState('')
+  const [endTime, setEndTime] = useState('')
 
   useEffect(() => {
     if (!testId) {
@@ -59,15 +154,17 @@ export function QuestionsPage() {
         const testResult = await getTestById(currentTestId)
         setTest(testResult)
 
-        if (testResult.subject_id ?? testResult.subject) {
-          const topicList = await getTopicsBySubject(String(testResult.subject_id ?? testResult.subject))
-          setTopics(topicList)
-        }
+        const subjectId = String(
+          testResult.subject_id ?? testResult.subject ?? "",
+        );
+        const topicList = mockTopicsBySubject[subjectId] ?? mockTopics;
+        const selectedTopicIds = testResult.topics ?? [];
+        const subTopicList = selectedTopicIds.flatMap(
+          (topicId) => mockSubTopicsByTopic[topicId] ?? [],
+        );
 
-        if ((testResult.topics ?? []).length > 0) {
-          const subTopicList = await getSubTopicsByTopics(testResult.topics ?? [])
-          setSubTopics(subTopicList)
-        }
+        setTopics(topicList);
+        setSubTopics(subTopicList.length > 0 ? subTopicList : mockSubTopics);
 
         if ((testResult.questions ?? []).length > 0) {
           const fetchedQuestions = await fetchQuestionsBulk(testResult.questions ?? [])
@@ -91,7 +188,10 @@ export function QuestionsPage() {
           )
         }
       } catch {
-        setErrorMessage('Could not load question editor.')
+        setTest({ ...mockTest, id: currentTestId })
+        setTopics(mockTopics)
+        setSubTopics(mockSubTopics);
+        setErrorMessage(null)
       } finally {
         setLoading(false)
       }
@@ -110,6 +210,35 @@ export function QuestionsPage() {
     )
   }, [draft])
 
+  const totalQuestionCount = questions.length > 0 ? questions.length : Number(test?.total_questions ?? 0)
+  const targetQuestionCount = useMemo(() => {
+    const value = Number(test?.total_questions ?? 2)
+    return value > 0 ? value : 2
+  }, [test?.total_questions])
+
+  const subjectLabel = useMemo(() => {
+    const subjectId = String(test?.subject_id ?? test?.subject ?? "");
+    if (!subjectId) return "N/A";
+    return mockSubjectsById[subjectId] ?? toLabel(subjectId);
+  }, [test?.subject, test?.subject_id]);
+
+  const modeLabel = useMemo(() => {
+    if (!test?.type) return "Chapter wise";
+    return toLabel(test.type);
+  }, [test?.type]);
+
+  function getTopicLabel(topicId: string | undefined) {
+    if (!topicId) return "N/A";
+    const match = topics.find((topic) => topic.id === topicId);
+    return match?.name ?? toLabel(topicId);
+  }
+
+  function getSubTopicLabel(subTopicId: string | undefined) {
+    if (!subTopicId) return "N/A";
+    const match = subTopics.find((subTopic) => subTopic.id === subTopicId);
+    return match?.name ?? toLabel(subTopicId);
+  }
+
   function updateDraft<K extends keyof EditableQuestion>(key: K, value: EditableQuestion[K]) {
     setDraft((prev) => ({ ...prev, [key]: value }))
   }
@@ -123,6 +252,11 @@ export function QuestionsPage() {
   }
 
   function handleAddOrUpdateQuestion() {
+    if (!editingId && questions.length >= targetQuestionCount) {
+      setShowPublishModal(true)
+      return
+    }
+
     if (!canSubmitDraft) {
       setErrorMessage('Question text and all 4 options are required.')
       return
@@ -148,6 +282,8 @@ export function QuestionsPage() {
       return
     }
 
+    const nextCount = questions.length + 1
+
     setQuestions((prev) => [
       ...prev,
       {
@@ -157,6 +293,10 @@ export function QuestionsPage() {
     ])
 
     resetDraft()
+
+    if (nextCount >= targetQuestionCount) {
+      setShowPublishModal(true)
+    }
   }
 
   function handleEdit(localId: string) {
@@ -173,6 +313,20 @@ export function QuestionsPage() {
     setQuestions((prev) => prev.filter((item) => item.localId !== localId))
   }
 
+  useEffect(() => {
+    setSidebarState({
+      questions,
+      totalQuestionCount,
+      editingId,
+      onEdit: handleEdit,
+      onDelete: handleDelete,
+    })
+
+    return () => {
+      setSidebarState(questionSidebarDefaultState)
+    }
+  }, [questions, totalQuestionCount, editingId, setSidebarState])
+
   async function handleSaveAndContinue() {
     if (!testId || !test) {
       return
@@ -186,6 +340,11 @@ export function QuestionsPage() {
     try {
       setSaving(true)
       setErrorMessage(null)
+
+      if (test.id === 'demo' || testId === 'demo') {
+        navigate(`/tests/${testId}/preview`)
+        return
+      }
 
       const existingIds = questions.map((item) => item.existingId).filter(Boolean) as string[]
       const newQuestions = questions.filter((item) => !item.existingId)
@@ -234,157 +393,134 @@ export function QuestionsPage() {
   }
 
   return (
-    <section className="page-card">
-      <div className="page-head">
-        <div>
-          <p className="eyebrow">Step 2</p>
-          <h2>Add Questions</h2>
-          <p className="muted">{test?.name ?? 'Test'} | MCQ format</p>
+    <section className="questions-page">
+      <div className="questions-page__layout">
+        <div className="questions-page__editor page-card">
+          <TestCreationHeader
+            selectedMode={selectedMode}
+            onSelectMode={setSelectedMode}
+            showPublish
+            publishLabel={saving ? "Publishing..." : "Publish"}
+            publishDisabled={saving}
+            onPublish={() => setShowPublishModal(true)}
+          />
+
+          <div className="questions-page__cards">
+            <div className={`questions-page__summary-card`}>
+              {/* top row: mode chip + edit icon */}
+              <div className="questions-page__card-top">
+                <span className="questions-page__chip questions-page__chip--mode">
+                  {modeLabel}
+                </span>
+                <button
+                  type="button"
+                  className="questions-page__card-edit-btn"
+                  aria-label="Edit question"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#7489ff"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* chapter title + difficulty */}
+              <span className="questions-page__summary-head">
+                <span className="questions-page__summary-title">
+                  {test?.name}
+                </span>
+                <span className="questions-page__chip questions-page__chip--difficulty">
+                  {toDifficulty(test?.difficulty)}
+                </span>
+              </span>
+
+              {/* subject */}
+              <span className="questions-page__summary-row">
+                <span className="caption-text">Subject</span>
+                <span className="questions-page__summary-colon">:</span>
+                <span className="body-text-1-medium">{subjectLabel}</span>
+              </span>
+
+              {/* topic */}
+              <span className="questions-page__summary-row">
+                <span className="caption-text">Topic</span>
+                <span className="questions-page__summary-colon">:</span>
+                <span className="questions-page__chip questions-page__chip--topic">
+                  {getTopicLabel(test?.topics?.[0])}
+                </span>
+              </span>
+
+              {/* sub topic + bottom stats */}
+              <div className="questions-page__card-bottom">
+                <span className="questions-page__summary-row">
+                  <span className="caption-text">Sub Topic</span>
+                  <span className="questions-page__summary-colon">:</span>
+                  <span className="questions-page__chip questions-page__chip--subtopic">
+                    {getSubTopicLabel(test?.sub_topics?.[0])}
+                  </span>
+                </span>
+                <div className="questions-page__card-stats">
+                  <span className="questions-page__card-stat">
+                    ⏱ {test?.total_time ?? 60} Min
+                  </span>
+                  <span className="questions-page__card-stat-sep" />
+                  <span className="questions-page__card-stat">
+                    📋 {test?.total_questions ?? 0} Q's
+                  </span>
+                  <span className="questions-page__card-stat-sep" />
+                  <span className="questions-page__card-stat">
+                    📊 {test?.total_marks ?? 100} Marks
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {showPublishModal ? (
+            <PublishFlowSection
+              publishMode={publishMode}
+              scheduleDate={scheduleDate}
+              scheduleTime={scheduleTime}
+              liveUntil={liveUntil}
+              endDate={endDate}
+              endTime={endTime}
+              saving={saving}
+              onPublishModeChange={setPublishMode}
+              onScheduleDateChange={setScheduleDate}
+              onScheduleTimeChange={setScheduleTime}
+              onLiveUntilChange={setLiveUntil}
+              onEndDateChange={setEndDate}
+              onEndTimeChange={setEndTime}
+              onCancel={() => setShowPublishModal(false)}
+              onConfirm={() => void handleSaveAndContinue()}
+            />
+          ) : (
+            <QuestionEditorShell
+              questions={questions}
+              editingId={editingId}
+              draft={draft}
+              targetQuestionCount={targetQuestionCount}
+              topics={topics}
+              subTopics={subTopics}
+              errorMessage={errorMessage}
+              onResetDraft={resetDraft}
+              onEdit={handleEdit}
+              onUpdateDraft={updateDraft}
+              onAddOrUpdateQuestion={handleAddOrUpdateQuestion}
+              onExit={() => void handleSaveAndContinue()}
+            />
+          )}
         </div>
       </div>
-
-      <div className="form-grid">
-        <label>
-          Question Text
-          <textarea
-            rows={3}
-            value={draft.question}
-            onChange={(event) => updateDraft('question', event.target.value)}
-            placeholder="Enter question"
-          />
-        </label>
-
-        <div className="grid-2">
-          <label>
-            Option 1
-            <input value={draft.option1} onChange={(event) => updateDraft('option1', event.target.value)} />
-          </label>
-          <label>
-            Option 2
-            <input value={draft.option2} onChange={(event) => updateDraft('option2', event.target.value)} />
-          </label>
-          <label>
-            Option 3
-            <input value={draft.option3} onChange={(event) => updateDraft('option3', event.target.value)} />
-          </label>
-          <label>
-            Option 4
-            <input value={draft.option4} onChange={(event) => updateDraft('option4', event.target.value)} />
-          </label>
-        </div>
-
-        <div className="grid-3">
-          <label>
-            Correct Option
-            <select
-              value={draft.correct_option}
-              onChange={(event) =>
-                updateDraft(
-                  'correct_option',
-                  event.target.value as EditableQuestion['correct_option'],
-                )
-              }
-            >
-              <option value="option1">Option 1</option>
-              <option value="option2">Option 2</option>
-              <option value="option3">Option 3</option>
-              <option value="option4">Option 4</option>
-            </select>
-          </label>
-          <label>
-            Difficulty
-            <select
-              value={draft.difficulty ?? 'medium'}
-              onChange={(event) =>
-                updateDraft('difficulty', event.target.value as EditableQuestion['difficulty'])
-              }
-            >
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-            </select>
-          </label>
-          <label>
-            Media URL
-            <input value={draft.media_url ?? ''} onChange={(event) => updateDraft('media_url', event.target.value)} />
-          </label>
-        </div>
-
-        <div className="grid-2">
-          <label>
-            Topic (optional)
-            <select value={draft.topic ?? ''} onChange={(event) => updateDraft('topic', event.target.value)}>
-              <option value="">Select topic</option>
-              {topics.map((topic) => (
-                <option key={topic.id} value={topic.id}>
-                  {topic.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Sub-topic (optional)
-            <select
-              value={draft.sub_topic ?? ''}
-              onChange={(event) => updateDraft('sub_topic', event.target.value)}
-            >
-              <option value="">Select sub-topic</option>
-              {subTopics.map((subTopic) => (
-                <option key={subTopic.id} value={subTopic.id}>
-                  {subTopic.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <label>
-          Explanation (optional)
-          <textarea
-            rows={2}
-            value={draft.explanation ?? ''}
-            onChange={(event) => updateDraft('explanation', event.target.value)}
-          />
-        </label>
-
-        <div className="action-row">
-          <button type="button" className="secondary-btn" onClick={handleAddOrUpdateQuestion}>
-            {editingId ? 'Update Question' : 'Add Another Question'}
-          </button>
-          <button type="button" className="primary-btn" onClick={() => void handleSaveAndContinue()}>
-            {saving ? 'Saving...' : 'Save & Continue'}
-          </button>
-        </div>
-
-        {errorMessage ? <p className="alert-error">{errorMessage}</p> : null}
-      </div>
-
-      <section className="questions-list">
-        <h3>Added Questions ({questions.length})</h3>
-        {questions.length === 0 ? <p className="muted">No questions added yet.</p> : null}
-        {questions.map((item, index) => (
-          <article key={item.localId} className="question-card">
-            <div>
-              <p className="question-label">Q{index + 1}</p>
-              <p>{item.question}</p>
-              <ul>
-                <li>A. {item.option1}</li>
-                <li>B. {item.option2}</li>
-                <li>C. {item.option3}</li>
-                <li>D. {item.option4}</li>
-              </ul>
-            </div>
-            <div className="action-row">
-              <button type="button" className="secondary-btn" onClick={() => handleEdit(item.localId)}>
-                Edit
-              </button>
-              <button type="button" className="danger-btn" onClick={() => handleDelete(item.localId)}>
-                Delete
-              </button>
-            </div>
-          </article>
-        ))}
-      </section>
     </section>
-  )
+  );
 }

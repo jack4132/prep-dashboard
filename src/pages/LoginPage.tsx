@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { login } from '../api/services'
 import { useAuthStore } from '../store/authStore'
+import './LoginPage.css'
 
 const loginSchema = z.object({
   userId: z.string().min(2, 'User ID required'),
@@ -48,28 +49,41 @@ export function LoginPage() {
   }
 
   return (
-    <div className="auth-layout">
-      <section className="auth-card">
-        <p className="eyebrow">Admin Access</p>
-        <h2>Login</h2>
-        <p className="muted">Manage tests, questions, and publishing from single dashboard.</p>
+    <div className="login-page">
+      <section className="login-page__left" aria-hidden="true">
+        <img
+          className="login-page__image"
+          src="/assets/login-logo.svg"
+          alt=""
+          role="presentation"
+        />
+      </section>
 
-        <form className="form-grid" onSubmit={handleSubmit(onSubmit)}>
-          <label>
+      <section className="login-page__right">
+        <img className="login-page__brand-icon" src="/assets/prep-route-icon.svg" alt="Prep Route icon" />
+        <div className="login-page__intro">
+          <h2 className="heading-2">Login</h2>
+          <p className="caption-text">Use your company provided Login credentials</p>
+        </div>
+
+        <form className="login-page__form" onSubmit={handleSubmit(onSubmit)}>
+          <label className="login-page__label body-text-1-medium">
             User ID
-            <input type="text" {...register('userId')} placeholder="Enter user ID" />
-            {errors.userId ? <span className="field-error">{errors.userId.message}</span> : null}
+            <input className="login-page__input" type="text" {...register('userId')} placeholder="Enter User ID" />
+            {errors.userId ? <span className="login-page__field-error">{errors.userId.message}</span> : null}
           </label>
 
-          <label>
+          <label className="login-page__label body-text-1-medium">
             Password
-            <input type="password" {...register('password')} placeholder="Enter password" />
-            {errors.password ? <span className="field-error">{errors.password.message}</span> : null}
+            <input className="login-page__input" type="password" {...register('password')} placeholder="Enter Password" />
+            {errors.password ? <span className="login-page__field-error">{errors.password.message}</span> : null}
           </label>
 
-          {errorMessage ? <p className="alert-error">{errorMessage}</p> : null}
+          <p className="body-text-2-regular login-page__forgot-password">Forgot password</p>
 
-          <button type="submit" className="primary-btn" disabled={isSubmitting}>
+          {errorMessage ? <p className="login-page__alert-error">{errorMessage}</p> : null}
+
+          <button type="submit" className="primary-btn login-page__submit-btn" disabled={isSubmitting}>
             {isSubmitting ? 'Signing in...' : 'Login'}
           </button>
         </form>

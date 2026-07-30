@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { deleteTest, getTests } from '../api/services'
 import type { Test } from '../types'
 import { formatDate } from '../utils/format'
+import './DashboardPage.css'
 
 export function DashboardPage() {
   const [tests, setTests] = useState<Test[]>([])
@@ -54,19 +55,20 @@ export function DashboardPage() {
   }, [search, tests])
 
   return (
-    <section className="page-card">
-      <div className="page-head">
+    <section className="dashboard-page">
+      <div className="dashboard-page__head">
         <div>
-          <p className="eyebrow">Tests</p>
-          <h2>Dashboard</h2>
+          <p className="dashboard-page__eyebrow">Tests</p>
+          <h2 className="dashboard-page__title">Dashboard</h2>
         </div>
-        <Link className="primary-btn" to="/tests/new">
+        <Link className="dashboard-page__create-btn" to="/tests/new">
           Create New Test
         </Link>
       </div>
 
-      <div className="toolbar">
+      <div className="dashboard-page__toolbar">
         <input
+          className="dashboard-page__search"
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
@@ -76,11 +78,11 @@ export function DashboardPage() {
       </div>
 
       {loading ? <p>Loading tests...</p> : null}
-      {errorMessage ? <p className="alert-error">{errorMessage}</p> : null}
+      {errorMessage ? <p className="dashboard-page__alert-error">{errorMessage}</p> : null}
 
       {!loading ? (
-        <div className="table-wrap">
-          <table>
+        <div className="dashboard-page__table-wrap">
+          <table className="dashboard-page__table">
             <thead>
               <tr>
                 <th>Name</th>
@@ -93,7 +95,7 @@ export function DashboardPage() {
             <tbody>
               {filteredTests.length === 0 ? (
                 <tr>
-                  <td colSpan={5}>No tests found.</td>
+                  <td className="dashboard-page__empty" colSpan={5}>No tests found.</td>
                 </tr>
               ) : (
                 filteredTests.map((test) => (
@@ -101,22 +103,24 @@ export function DashboardPage() {
                     <td>{test.name}</td>
                     <td>{String(test.subject ?? test.subject_id ?? '-')}</td>
                     <td>
-                      <span className={`status-pill ${String(test.status) === 'live' ? 'live' : 'draft'}`}>
+                      <span
+                        className={`dashboard-page__status-pill ${String(test.status) === 'live' ? 'dashboard-page__status-pill--live' : 'dashboard-page__status-pill--draft'}`}
+                      >
                         {String(test.status ?? 'draft')}
                       </span>
                     </td>
                     <td>{formatDate(test.created_at)}</td>
                     <td>
-                      <div className="action-row">
-                        <Link className="secondary-btn" to={`/tests/${test.id}/edit`}>
+                      <div className="dashboard-page__actions">
+                        <Link className="dashboard-page__secondary-btn" to={`/tests/${test.id}/edit`}>
                           Edit
                         </Link>
-                        <Link className="secondary-btn" to={`/tests/${test.id}/preview`}>
+                        <Link className="dashboard-page__secondary-btn" to={`/tests/${test.id}/preview`}>
                           View
                         </Link>
                         <button
                           type="button"
-                          className="danger-btn"
+                          className="dashboard-page__danger-btn"
                           onClick={() => void handleDelete(test.id)}
                         >
                           Delete

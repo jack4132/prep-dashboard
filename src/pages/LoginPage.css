@@ -1,0 +1,137 @@
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(420px, 1fr);
+  gap: 24px;
+  padding: 24px;
+}
+
+.login-page__left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-page__image {
+  width: min(480px, 88%);
+  max-height: 78vh;
+  object-fit: contain;
+}
+
+.login-page__right {
+  background: var(--surface);
+  border: 0.5px solid #60a5fa;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 30px;
+  padding: 250px 100px 250px 100px;
+}
+
+.login-page__brand-icon {
+  width: 130px;
+  height: auto;
+}
+
+.login-page__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-page__form {
+  display: grid;
+  gap: 30px;
+  width: 100%;
+}
+
+.login-page__label {
+  display: grid;
+  gap: 15px;
+  width: 100%;
+}
+
+.login-page__input {
+  width: 100%;
+  height: 48px;
+  border: 0.5px solid #9ca3af;
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  background: var(--surface);
+  color: var(--text-category);
+  font-family: 'Inter', 'Manrope', 'Segoe UI', 'Helvetica Neue', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 150%;
+  letter-spacing: 0;
+}
+
+.login-page__input::placeholder {
+  color: #d1d5db;
+  font-family: 'Inter', 'Manrope', 'Segoe UI', 'Helvetica Neue', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 150%;
+  letter-spacing: 0;
+}
+
+.login-page__input:focus {
+  outline: 2px solid var(--login-focus-ring);
+  border-color: var(--login-button-color);
+}
+
+.login-page__forgot-password {
+  margin: 0;
+  color: var(--login-forgot-color);
+}
+
+.login-page__submit-btn {
+  width: min(510px, 100%);
+  height: 48px;
+  padding: 0 20px;
+  border-radius: var(--radius-sm);
+  background: var(--login-button-color);
+}
+
+.login-page__field-error,
+.login-page__alert-error {
+  font-size: 13px;
+  color: var(--danger);
+}
+
+@media (max-width: 1280px) {
+  .login-page__right {
+    padding: 180px 72px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+
+  .login-page__left {
+    min-height: 32vh;
+  }
+
+  .login-page__image {
+    max-height: 30vh;
+  }
+
+  .login-page__right {
+    padding: 80px 48px;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-page {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .login-page__right {
+    padding: 34px 20px;
+  }
+}
