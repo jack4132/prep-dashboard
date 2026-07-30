@@ -24,7 +24,7 @@ const items = [
 
 function QuestionPanel() {
   const { state } = useQuestionSidebar();
-  const { questions, totalQuestionCount, editingId, onEdit, onDelete } = state;
+  const { questions, totalQuestionCount, editingId, onEdit } = state;
   return (
     <aside
       className="shell__question-panel"
