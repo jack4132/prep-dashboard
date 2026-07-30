@@ -1,4 +1,6 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { useState } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../store/authStore'
 import { useQuestionSidebar } from "../store/questionSidebarContext";
 import "./AppShell.css";
 
@@ -71,9 +73,18 @@ function QuestionPanel() {
 
 export function AppShell() {
   const location = useLocation();
+  const navigate = useNavigate()
+  const logout = useAuthStore((state) => state.logout)
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const isQuestionCreationPage = /^\/tests\/[^/]+\/questions\/?$/.test(
     location.pathname,
   );
+
+  function handleLogout() {
+    logout()
+    setIsProfileMenuOpen(false)
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div
@@ -118,21 +129,37 @@ export function AppShell() {
                 src="/assets/notification.svg"
                 alt="Notifications"
               />
-              <div className="shell__profile">
-                <img
-                  className="shell__profile-icon"
-                  src="/assets/user-icon.svg"
-                  alt="User avatar"
-                />
-                <div className="shell__profile-text">
-                  <span className="heading-2 shell__profile-name">
-                    Alex Wando
-                  </span>
-                  <span className="caption-text shell__profile-role">
-                    Admin
-                  </span>
+              <div className="shell__profile-wrap">
+                <button
+                  type="button"
+                  className="shell__profile"
+                  onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+                  aria-expanded={isProfileMenuOpen}
+                  aria-haspopup="menu"
+                >
+                  <img
+                    className="shell__profile-icon"
+                    src="/assets/user-icon.svg"
+                    alt="User avatar"
+                  />
+                  <div className="shell__profile-text">
+                    <span className="heading-2 shell__profile-name">
+                      Alex Wando
+                    </span>
+                    <span className="caption-text shell__profile-role">
+                      Admin
+                    </span>
+                  </div>
+                  <span className="shell__profile-caret" aria-hidden="true" />
+                </button>
+
+                {isProfileMenuOpen ? (
+                  <div className="shell__profile-menu" role="menu" aria-label="Profile options">
+                    <button type="button" className="shell__profile-menu-btn" onClick={handleLogout}>
+                      Logout
+                    </button>
                 </div>
-                <span className="shell__profile-caret" aria-hidden="true" />
+                ) : null}
               </div>
             </div>
           </header>
