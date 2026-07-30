@@ -5,14 +5,15 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   createTest,
+  getSubjects,
   getSubTopicsByTopic,
   getSubTopicsByTopics,
   getTestById,
   getTopicsBySubject,
   updateTest,
-} from '../api/services'
-import type { CreateTestPayload, Difficulty, Subject, SubTopic, Test, Topic } from '../types'
-import { TestCreationHeader, type TestCreationMode } from '../components/TestCreationHeader'
+} from '../../api/services'
+import type { CreateTestPayload, Difficulty, Subject, SubTopic, Test, Topic } from '../../types'
+import { TestCreationHeader, type TestCreationMode } from '../../components/TestCreationHeader'
 import './TestFormPage.css'
 
 const testSchema = z.object({
@@ -283,8 +284,7 @@ export function TestFormPage() {
   }, [selectedMode, setValue])
 
   useEffect(() => {
-    void import('../api/services')
-      .then(({ getSubjects }) => getSubjects())
+    void getSubjects()
       .then((result) => { if (result.length > 0) setSubjects(result) })
       .catch(() => { /* keep mockSubjects */ })
   }, [])

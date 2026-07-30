@@ -5,13 +5,13 @@ import {
   fetchQuestionsBulk,
   getTestById,
   updateTest,
-} from "../api/services";
-import type { EditableQuestion, QuestionInput, SubTopic, Test, Topic } from '../types'
-import { uniqueValues } from '../utils/format'
-import { questionSidebarDefaultState, useQuestionSidebar } from '../store/questionSidebarContext'
-import { TestCreationHeader, type TestCreationMode } from '../components/TestCreationHeader'
-import { QuestionEditorShell } from '../components/QuestionEditorShell'
-import { PublishFlowSection } from '../components/PublishFlowSection'
+} from "../../api/services";
+import type { EditableQuestion, QuestionInput, SubTopic, Test, Topic } from '../../types'
+import { uniqueValues } from '../../utils/format'
+import { questionSidebarDefaultState, useQuestionSidebar } from '../../store/questionSidebarContext'
+import { TestCreationHeader, type TestCreationMode } from '../../components/TestCreationHeader'
+import { QuestionEditorShell } from '../../components/QuestionEditorShell'
+import { PublishFlowSection } from '../../components/PublishFlowSection'
 import './QuestionsPage.css'
 
 const questionTemplate: Omit<EditableQuestion, 'localId'> = {

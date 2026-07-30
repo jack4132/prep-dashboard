@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../store/authStore'
-import { useQuestionSidebar } from "../store/questionSidebarContext";
+import { useAuthStore } from '../../store/authStore'
+import { useQuestionSidebar } from "../../store/questionSidebarContext";
 import "./AppShell.css";
 
 const items = [

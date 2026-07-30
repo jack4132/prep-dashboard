@@ -3,8 +3,8 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { login } from '../api/services'
-import { useAuthStore } from '../store/authStore'
+import { login } from '../../api/services'
+import { useAuthStore } from '../../store/authStore'
 import './LoginPage.css'
 
 const loginSchema = z.object({
